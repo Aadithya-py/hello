@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Number Caller</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      gap: 24px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #a78bfa;
+    }
+
+    /* ── Called number display ── */
+    #called-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #called-label {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+
+    #called-number {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #1e1e30;
+      border: 3px solid #4c1d95;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 700;
+      color: #a78bfa;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    #called-number.pop {
+      transform: scale(1.15);
+      box-shadow: 0 0 30px #a78bfa88;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    #btn-generate {
+      background: #7c3aed;
+      color: #fff;
+    }
+
+    #btn-generate:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    #btn-reset {
+      background: #1e1e30;
+      color: #a78bfa;
+      border: 1px solid #4c1d95;
+    }
+
+    #btn-reset:hover { background: #2a2a45; }
+
+    /* ── Progress bar ── */
+    #progress-wrap {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #progress-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      letter-spacing: 1px;
+    }
+
+    #progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: #1e1e30;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    /* ── Main area: grid + history side by side ── */
+    #main {
+      display: flex;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+      align-items: flex-start;
+    }
+
+    /* ── Number grid ── */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      flex: 1;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: #1e1e30;
+      border: 1px solid #2a2a45;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4b5563;
+      transition: background 0.3s, color 0.3s, transform 0.15s, box-shadow 0.3s;
+      user-select: none;
+    }
+
+    .cell.called {
+      background: #4c1d95;
+      color: #e9d5ff;
+      border-color: #7c3aed;
+    }
+
+    .cell.latest {
+      background: #7c3aed;
+      color: #fff;
+      border-color: #a78bfa;
+      box-shadow: 0 0 16px #a78bfa66;
+      transform: scale(1.08);
+    }
+
+    /* ── History panel ── */
+    #history-panel {
+      width: 180px;
+      flex-shrink: 0;
+      background: #1e1e30;
+      border: 1px solid #2a2a45;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #history-title {
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    #history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 420px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #4c1d95 #0f0f1a;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      background: #0f0f1a;
+      font-size: 0.85rem;
+    }
+
+    .history-item .h-index {
+      color: #4b5563;
+      font-size: 0.7rem;
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .history-item .h-num {
+      font-weight: 700;
+      color: #a78bfa;
+    }
+
+    .history-item.h-latest {
+      background: #2a1a50;
+    }
+
+    #history-empty {
+      color: #4b5563;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    /* ── Done banner ── */
+    #done-banner {
+      display: none;
+      background: #1a2e1a;
+      border: 1px solid #16a34a;
+      color: #4ade80;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    /* responsive */
+    @media (max-width: 680px) {
+      #main { flex-direction: column; }
+      #history-panel { width: 100%; }
+      #history-list { max-height: 200px; flex-direction: row; flex-wrap: wrap; overflow-y: auto; }
+      .history-item { flex-direction: column; gap: 2px; padding: 4px 6px; }
+      .history-item .h-index { width: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Number Caller</h1>
+
+  <div id="called-display">
+    <span id="called-label">Current Number</span>
+    <div id="called-number">—</div>
+  </div>
+
+  <div class="btn-row">
+    <button id="btn-generate" onclick="generateNumber()">Generate</button>
+    <button id="btn-reset" onclick="resetGame()">Reset</button>
+  </div>
+
+  <div id="progress-wrap">
+    <span id="progress-label">0 / 90 called</span>
+    <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+  </div>
+
+  <div id="done-banner">All 90 numbers have been called!</div>
+
+  <div id="main">
+    <div id="grid"></div>
+
+    <div id="history-panel">
+      <div id="history-title">Call History</div>
+      <div id="history-list">
+        <span id="history-empty">No numbers yet</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let remaining = [];
+    let called = [];
+    let latestNumber = null;
+
+    const gridEl        = document.getElementById('grid');
+    const calledNumEl   = document.getElementById('called-number');
+    const btnGenerate   = document.getElementById('btn-generate');
+    const progressLabel = document.getElementById('progress-label');
+    const progressBar   = document.getElementById('progress-bar');
+    const doneBanner    = document.getElementById('done-banner');
+    const historyList   = document.getElementById('history-list');
+
+    function buildGrid() {
+      gridEl.innerHTML = '';
+      for (let n = 1; n <= 90; n++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.id = `cell-${n}`;
+        cell.textContent = n;
+        gridEl.appendChild(cell);
+      }
+    }
+
+    function generateNumber() {
+      if (remaining.length === 0) return;
+
+      const idx = Math.floor(Math.random() * remaining.length);
+      const num = remaining.splice(idx, 1)[0];
+      called.push(num);
+
+      // clear previous latest
+      if (latestNumber !== null) {
+        const prev = document.getElementById(`cell-${latestNumber}`);
+        if (prev) { prev.classList.remove('latest'); prev.classList.add('called'); }
+      }
+
+      latestNumber = num;
+      const cell = document.getElementById(`cell-${num}`);
+      cell.classList.add('latest');
+
+      // big display + pop animation
+      calledNumEl.textContent = num;
+      calledNumEl.classList.remove('pop');
+      void calledNumEl.offsetWidth; // reflow to restart animation
+      calledNumEl.classList.add('pop');
+      setTimeout(() => calledNumEl.classList.remove('pop'), 200);
+
+      // progress
+      const count = called.length;
+      progressLabel.textContent = `${count} / 90 called`;
+      progressBar.style.width = `${(count / 90) * 100}%`;
+
+      // history
+      updateHistory(num, count);
+
+      // done?
+      if (remaining.length === 0) {
+        btnGenerate.disabled = true;
+        doneBanner.style.display = 'block';
+      }
+    }
+
+    function updateHistory(num, index) {
+      const empty = document.getElementById('history-empty');
+      if (empty) empty.remove();
+
+      // de-highlight previous latest item
+      const prevLatest = historyList.querySelector('.h-latest');
+      if (prevLatest) prevLatest.classList.remove('h-latest');
+
+      const item = document.createElement('div');
+      item.className = 'history-item h-latest';
+      item.innerHTML = `<span class="h-index">${index}.</span><span class="h-num">${num}</span>`;
+      historyList.insertBefore(item, historyList.firstChild);
+    }
+
+    function resetGame() {
+      remaining = Array.from({ length: 90 }, (_, i) => i + 1);
+      called = [];
+      latestNumber = null;
+
+      calledNumEl.textContent = '—';
+      progressLabel.textContent = '0 / 90 called';
+      progressBar.style.width = '0%';
+      doneBanner.style.display = 'none';
+      btnGenerate.disabled = false;
+
+      historyList.innerHTML = '<span id="history-empty">No numbers yet</span>';
+
+      buildGrid();
+    }
+
+    resetGame();
+  </script>
+</body>
+</html>
